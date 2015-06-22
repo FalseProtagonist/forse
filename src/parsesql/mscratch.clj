@@ -1,26 +1,19 @@
 (import '(java.util.regex Matcher))
 
-(defn re-qr [replacement]
-         (Matcher/quoteReplacement replacement))
 
+(ebnfParser (applymods [cuttochase, (partial picklines 0 80) #(replacetokendef %1 "space" "marctemp")] ansi ))
 
-(str "hello" "world")
-(str "\r")
-(def patt (re-pattern "(\r\n<percent> ::= )([^\r]*)(\r\n)"))
-(def percentline (first  (re-find patt  cutansi)))
-(re-find patt percentline)
-(re-find patt (clojure.string/replace percentline patt "$1hello$3" ))
+#_(printthenparse 0 60)
 
-percentline
+#_(pickansilines 0 2000)
 
 (print (pickansilines 1200 1400))
 
-(re-find #"<percent> [^\r]*" (pickansilines 0 1000))
+(print (picklines 0 20 (cuttochase ansi)))
 
-(pickansilines 0 200)
+(clojure.pprint/pprint (ebnfParser (picklines 0 19 (cuttochase ansi))))
 
-(defn applymods [functions bnftext]
-  (letfn [(transformstep [text func] (func text))]
-    (reduce transformstep bnftext functions)))
-(apply str 2 3) 
-(applymods [#(str %1 "hello" ) #(str %1 "world")] "yoyo")
+(printthenparse 13 19 (cuttochase ansi))
+
+(print (replaceexldefs (picklines 0 60 (cuttochase ansi))))
+

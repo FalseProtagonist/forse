@@ -3,63 +3,88 @@
   (:require [instaparse.core :as insta]))
 
 (def ansi (slurp "92ansibnf.txt"))
-(def cutansi (subs ansi (.indexOf ansi "<SQL")))
-(defn pickansilines 
+#_(def cutansi (subs ansi (.indexOf ansi "<SQL")))
+(defn cuttochase [input] (let [start (.indexOf input "<SQL")] (subs input start)))
+
+(defn picklines 
   (
-   [from to] 
-   (let [matcher (re-matcher #".*?\r\n" cutansi)
+   [from to input] 
+   (let [matcher (re-matcher #".*?\r\n" input)
          getmatch (fn [] (re-find matcher))
          conjer (fn [col val] (conj col (getmatch)))]
     (dotimes [n from] (getmatch))
     (clojure.string/join (reduce conjer [] (range (- to from)))))))
 
+(def exclam (re-find #"\n[^\n]*\n[^\n]*![^\n]*\n[^\n]*\n" (picklines 0 200 (cuttochase ansi))))
 
 (defn replacetokendef
-  [input tokenname rhs] 
+  [tokenname rhs input] 
   (clojure.string/replace 
    input
    (re-pattern (str "(\r\n<"  tokenname "> ::= )([^\r]*)(\r\n)"))
    (str "$1" rhs "$3")
    ))
+(defn replaceexldefs
+  [input]
+  (clojure.string/replace
+   input
+   (re-pattern (str "(\r\n<)([\\w ]*)(> ::= )(!![^\r]*)(\r\n)"))
+   (str "$1$2$3<m_$2>$5")))
 (defn createtokreptransform [tokenname rhs]
   (fn [input]
-    (replacetokendef (input tokenname rhs))))
-(replacetokendef (pickansilines 0 200) "percent" "hello")
-((createtokreptransform "percent" "hello") (pickansilines 0 200))
+    (replacetokendef input tokenname rhs)))
+
+(defn applymods [functions bnftext]
+  (letfn [(transformstep [text func] (func text))]
+    (reduce transformstep bnftext functions)))
 
 (def firstansi (subs ansi (.indexOf ansi "<SQL") (+ 94 (.indexOf ansi "<SQL"))  ))
 (def secondansi (subs ansi (.indexOf ansi "<SQL") (+ 200 (.indexOf ansi "<SQL"))  ))
 (def EBNF 
 "EBNF = statement+
 statement = comment | rule
-comment = #'--li[^\\n]*[\\n]' 
+comment = whitespace? #'--li[^\\n]*[\\n]' 
 rule = lhs whitespace? '::=' whitespace? rhs
 lhs = identifier
-identifier = #'<[\\w ]+>'
+identifier = #'<[\\w-_ ]+>'
 rhs = whitespace? (alternator | identifier | token | quantifier) (whitespace rhs)? whitespace?
 nonaltrhs = identifier | token | quantifier
 <whitespace> = <#'[\\s]+'>
 alternator = nonaltrhs (whitespace? <'|'> whitespace? nonaltrhs)+
-token = #'[\\w]+'
+token = #'[^|]' | #'[\\w+]'
 quantifier = rhs whitespace '...' | <'['> whitespace rhs <']'>")
 (def ebnfParser (insta/parser EBNF))
 
-(defn printthenparse [from to]
-  (let [thisansi (pickansilines from to)]
-    (print thisansi)
-    (ebnfParser thisansi)))
+(defn printthenparse 
+  ([from to input]
+   (let [thisansi (picklines from to input)]
+     (print thisansi)
+     (clojure.pprint/pprint (ebnfParser thisansi))))
+  ([input]
+   (printthenparse 0 (count input) input))
+  )
 
-(def ebnfSamples 
-(import '(java.util.regex Matcher))
+(defn mmtest ([a] (print a)) ([a b] (print "two args!")))
+
+(def testStrings
   {
-  :joe "--lib<joe> ::= hello"
-  :flat  "<SQL terminal character> ::= <SQL language character> | <SQL embedded language character>"
-})
-(def usefulRanges [0 19 0 3 0 30])
+   :joe "\r\n--lib<joe> ::= hello\r\n"
+   :flat  "<SQL terminal character> ::= <SQL language character> | <SQL embedded language character>"
+   })
+(def usefulRanges [0 19 0 3 0 30 19 21 0 69 0 108])
 
-(printthenparse 0 60)
+(defn currentmods
+  [start end]
+  (vector cuttochase #(picklines start end %1) replaceexldefs))
 
-(pickansilines 0 2000)
+(defn currentstuff 
+  [start end] 
+  (applymods (currentmods start end) ansi))
 
 
-(re-matcher #".*?\r\n" cutansi)
+#_(printthenparse (currentstuff 0 108))
+(printthenparse (currentstuff 106 110))
+(print (currentstuff 0 106))
+#_(printthenparse mtemp)
+
+#_(print (picklines 0 69 (cuttochase ansi)))
