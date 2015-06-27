@@ -13,7 +13,18 @@
 
 (clojure.pprint/pprint (ebnfParser (picklines 0 19 (cuttochase ansi))))
 
+(print currentstuff)
 (printthenparse 13 19 (cuttochase ansi))
 
 (print (replaceexldefs (picklines 0 60 (cuttochase ansi))))
+(printthenparse (:what teststrings))
+(def teststrings {:original "<identifier body> ::= <identifier start> [ { <underscore> | <identifier part> } ... ]"
+                  :nobrackets "<identifier body> ::= <identifier start> [ <underscore> | <identifier part> ... ]"
+                  :what "<identifier> ::= \r\n <stuff>"
+                  :what2 "<identifier> ::= <stuff>"})
+(def testparser (insta/parser "whitespace = #'[\\040]'+"))
+(testparser "    ")
+(print (map vector (range 100) (:what2 teststrings)))
+
+(print (:what teststrings))
 

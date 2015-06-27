@@ -28,7 +28,7 @@
   [input]
   (clojure.string/replace
    input
-   (re-pattern (str "(\r\n<)([\\w ]*)(> ::= )(!![^\r]*)(\r\n)"))
+   (re-pattern (str "(\r\n<)([\\w\\040]*)(> ::= )(!![^\r]*)(\r\n)"))
    (str "$1$2$3<m_$2>$5")))
 (defn createtokreptransform [tokenname rhs]
   (fn [input]
@@ -46,12 +46,12 @@ statement = comment | rule
 comment = whitespace? #'--li[^\\n]*[\\n]' 
 rule = lhs whitespace? '::=' whitespace? rhs
 lhs = identifier
-identifier = #'<[\\w-_ ]+>'
+identifier = #'<[\\w\\040]+>'
 rhs = whitespace? (alternator | identifier | token | quantifier) (whitespace rhs)? whitespace?
 nonaltrhs = identifier | token | quantifier
 <whitespace> = <#'[\\s]+'>
 alternator = nonaltrhs (whitespace? <'|'> whitespace? nonaltrhs)+
-token = #'[^|]' | #'[\\w+]'
+token = #'[^|\\]\\[\\}\\{\\040]' | #'[\\w+]'
 quantifier = rhs whitespace '...' | <'['> whitespace rhs <']'>")
 (def ebnfParser (insta/parser EBNF))
 
@@ -62,7 +62,7 @@ quantifier = rhs whitespace '...' | <'['> whitespace rhs <']'>")
      (clojure.pprint/pprint (ebnfParser thisansi))))
   ([input]
    (printthenparse 0 (count input) input))
-  )
+s  )
 
 (defn mmtest ([a] (print a)) ([a b] (print "two args!")))
 
@@ -83,8 +83,9 @@ quantifier = rhs whitespace '...' | <'['> whitespace rhs <']'>")
 
 
 #_(printthenparse (currentstuff 0 108))
-(printthenparse (currentstuff 106 110))
-(print (currentstuff 0 106))
+(printthenparse (currentstuff 107 108))
+(print (map vector (range 43) (currentstuff 107 108)))
+#_(print (currentstuff 0 106))
 #_(printthenparse mtemp)
-
+(print (currentstuff 0 20))
 #_(print (picklines 0 69 (cuttochase ansi)))
